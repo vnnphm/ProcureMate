@@ -20,6 +20,7 @@ from .schemas import (
     PurchaseRequestCreate,
     PurchaseRequestCreateInternal,
     PurchaseRequestDetail,
+    PurchaseRequestEditableUpdate,
     PurchaseRequestListItem,
     PurchaseRequestRead,
     PurchaseRequestUpdate,
@@ -52,6 +53,8 @@ STEP_ROLES: dict[PurchaseRequestStatus, set[str]] = {
     PurchaseRequestStatus.PENDING_PROCUREMENT: {"finance", "admin"},
 }
 
+EDIT_ROLES = {"admin", "manager"}
+
 
 def check_step_permission(status: PurchaseRequestStatus, current_user: dict) -> None:
     if current_user.get("is_superuser"):
@@ -59,6 +62,17 @@ def check_step_permission(status: PurchaseRequestStatus, current_user: dict) -> 
     allowed = STEP_ROLES.get(status, set())
     if current_user.get("role") not in allowed:
         raise HTTPException(status_code=403, detail="Your role cannot act on this approval step")
+
+
+def check_update_permission(request: PurchaseRequestRead | dict, current_user: dict) -> None:
+    if current_user.get("is_superuser") or current_user.get("role") in EDIT_ROLES:
+        return
+
+    requester_id = request.requester_id if isinstance(request, PurchaseRequestRead) else request.get("requester_id")
+    if requester_id == current_user["id"]:
+        return
+
+    raise HTTPException(status_code=403, detail="Only the requester or an authorized role can update this request")
 
 
 def get_request_status(request: PurchaseRequestRead | dict) -> PurchaseRequestStatus:
@@ -283,12 +297,12 @@ async def delete_purchase_request(
 async def update_purchase_request(
     current_user: CurrentUserDep,
     request_id: int,
-    body: PurchaseRequestUpdate,
+    body: PurchaseRequestEditableUpdate,
     db: AsyncSession = Depends(async_session),
 ):
-    request = await crud_purchase_requests.get(db, id=request_id)
-    if not request:
-        raise HTTPException(status_code=404, detail="Request not found")
+    request = await get_existing_purchase_request(db, request_id)
+    check_update_permission(request, current_user)
+
     await crud_purchase_requests.update(
         db,
         object=body,
@@ -366,6 +380,4 @@ async def get_budget_check(current_user: CurrentUserDep, request_id: int, db: As
         remaining_after=remaining_after,
         utilization_pct=min(utilization_pct, 100)
     )
-
-
 

@@ -49,6 +49,19 @@ class PurchaseRequestUpdate(BaseModel):
     policy_flags: list[str] | None = None
     info_request_message: str | None = None
     info_response_message: str | None = None
+
+
+class PurchaseRequestEditableUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str | None = None
+    category: str | None = None
+    item: str | None = None
+    quantity: int | None = None
+    estimated_budget: float | None = None
+    requirements: list[str] | None = None
+    needed_by: str | None = None
+    department: str | None = None
 #Response Schema
 class PurchaseRequestRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -102,4 +115,3 @@ class PurchaseRequestListItem(BaseModel):
     requester_name: str | None
     requester_id: int | None
     created_at: datetime | None
-

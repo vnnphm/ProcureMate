@@ -231,19 +231,25 @@ def create_application(
     elif hasattr(settings, "OPENAPI_URL"):
         _openapi_url = settings.OPENAPI_URL
 
-    metadata["docs_url"] = _docs_url
-    metadata["redoc_url"] = _redoc_url
-    metadata["openapi_url"] = _openapi_url
-
-    kwargs.update(metadata)
-
+    custom_docs_enabled = isinstance(settings, EnvironmentSettings) and (
+        settings.ENVIRONMENT != EnvironmentOption.PRODUCTION or _enable_docs_in_production
+    )
     hide_docs = (
         isinstance(settings, EnvironmentSettings)
         and settings.ENVIRONMENT == EnvironmentOption.PRODUCTION
         and not _enable_docs_in_production
     )
-    if hide_docs:
-        kwargs.update({"docs_url": None, "redoc_url": None, "openapi_url": None})
+
+    if custom_docs_enabled or hide_docs:
+        metadata["docs_url"] = None
+        metadata["redoc_url"] = None
+        metadata["openapi_url"] = None
+    else:
+        metadata["docs_url"] = _docs_url
+        metadata["redoc_url"] = _redoc_url
+        metadata["openapi_url"] = _openapi_url
+
+    kwargs.update(metadata)
 
     if lifespan is None:
         lifespan = lifespan_factory(settings, create_tables_on_startup=_create_tables_on_startup)
@@ -288,9 +294,7 @@ def create_application(
         _environment = settings.ENVIRONMENT.value if hasattr(settings, "ENVIRONMENT") else EnvironmentOption.DEVELOPMENT.value
         application.add_middleware(SecurityHeadersMiddleware, environment=_environment)
 
-    show_docs = isinstance(settings, EnvironmentSettings) and (
-        settings.ENVIRONMENT != EnvironmentOption.PRODUCTION or _enable_docs_in_production
-    )
+    show_docs = custom_docs_enabled
 
     if show_docs:
         docs_router = APIRouter()
@@ -313,15 +317,15 @@ def create_application(
         if apply_dependency and dependency_to_apply is not None:
             docs_router = APIRouter(dependencies=[Depends(dependency_to_apply)])
 
-        @docs_router.get("/docs", include_in_schema=False)
+        @docs_router.get(_docs_url, include_in_schema=False)
         async def get_swagger_documentation() -> fastapi.responses.HTMLResponse:
-            return get_swagger_ui_html(openapi_url="/openapi.json", title="docs")
+            return get_swagger_ui_html(openapi_url=_openapi_url, title="docs")
 
-        @docs_router.get("/redoc", include_in_schema=False)
+        @docs_router.get(_redoc_url, include_in_schema=False)
         async def get_redoc_documentation() -> fastapi.responses.HTMLResponse:
-            return get_redoc_html(openapi_url="/openapi.json", title="redoc")
+            return get_redoc_html(openapi_url=_openapi_url, title="redoc")
 
-        @docs_router.get("/openapi.json", include_in_schema=False)
+        @docs_router.get(_openapi_url, include_in_schema=False)
         async def openapi() -> dict[str, Any]:
             return get_openapi(
                 title=metadata.get("title", "API"),
