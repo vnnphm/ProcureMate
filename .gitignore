@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Python
+.venv/
+**/.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.env
+**/.env
+
+# IDE
+.idea/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Lock files (optional - many teams keep these, your call)

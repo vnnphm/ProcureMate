@@ -1,0 +1,20 @@
+@import "tailwindcss";
+@import "./App.css";
+
+#root {
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+p {
+  margin: 0;
+}
