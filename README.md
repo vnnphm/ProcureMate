@@ -15,6 +15,9 @@ The project is split into a FastAPI backend and a React/Vite frontend.
 - Vendor management
 - Role-aware backend authorization for approval actions
 
+<img width="800" height="476" alt="ScreenRecording2026-06-11at6 09 45PM-ezgif com-video-to-gif-converter" src="https://github.com/user-attachments/assets/418ae7ce-1f04-4960-b83b-2157e5ff36d8" />
+
+
 ## Tech Stack
 
 - Frontend: React, TypeScript, Vite, Tailwind CSS, shadcn-style UI components
